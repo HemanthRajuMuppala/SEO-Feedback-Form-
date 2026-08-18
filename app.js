@@ -21,14 +21,12 @@ function bindLimit(name, max, countId) {
 
   inputs.forEach((el) => {
     el.addEventListener("click", (event) => {
-      const checked = inputs.filter((item) => item.checked);
-      if (!el.checked && checked.length >= max) {
+      if (!el.checked && inputs.filter((item) => item.checked).length >= max) {
         event.preventDefault();
       }
     });
     el.addEventListener("change", refresh);
   });
-
   refresh();
 }
 
@@ -49,38 +47,7 @@ bindOther("fruits", "fruits-other");
 bindOther("dryFruits", "dry-fruits-other");
 bindOther("chooseMoreOften", "reason-other");
 
-function onGitHubPages() {
-  return location.hostname.endsWith("github.io");
-}
-
-function apiUrl(path) {
-  if (location.port === "3000") return path;
-  return "http://localhost:3000" + path;
-}
-
-function saveLocal(payload) {
-  const rows = JSON.parse(localStorage.getItem("society-essentials-responses") || "[]");
-  rows.push({
-    id: Date.now().toString(36),
-    createdAt: new Date().toISOString(),
-    ...payload,
-  });
-  localStorage.setItem("society-essentials-responses", JSON.stringify(rows));
-}
-
-async function readJson(res) {
-  const text = await res.text();
-  if (!text) {
-    throw new Error("Could not reach the survey server. Run node server.js and open http://localhost:3000");
-  }
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error("Could not reach the survey server. Run node server.js and open http://localhost:3000");
-  }
-}
-
-form.addEventListener("submit", async (event) => {
+form.addEventListener("submit", (event) => {
   event.preventDefault();
   errorEl.classList.remove("is-on");
   errorEl.textContent = "";
@@ -96,24 +63,19 @@ form.addEventListener("submit", async (event) => {
     chooseMoreOftenOther: document.getElementById("reason-other").value.trim(),
   };
 
-  submitBtn.disabled = true;
-  try {
-    if (onGitHubPages()) {
-      saveLocal(payload);
-    } else {
-      const res = await fetch(apiUrl("/api/feedback"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await readJson(res);
-      if (!res.ok) throw new Error(data.error || "Could not save your feedback.");
-    }
-    form.hidden = true;
-    thanksEl.classList.add("is-on");
-  } catch (err) {
-    errorEl.textContent = err.message;
+  if (
+    !payload.preferredDays.length &&
+    !payload.fruits.length &&
+    !payload.dryFruits.length &&
+    !payload.diwaliHamper &&
+    !payload.chooseMoreOften.length
+  ) {
+    errorEl.textContent = "Please tap at least one answer.";
     errorEl.classList.add("is-on");
-    submitBtn.disabled = false;
+    return;
   }
+
+  saveResponse(payload);
+  form.hidden = true;
+  thanksEl.classList.add("is-on");
 });

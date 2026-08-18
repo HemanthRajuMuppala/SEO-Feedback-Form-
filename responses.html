@@ -10,10 +10,10 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="progress" aria-hidden="true"></div>
   <main class="wrap admin">
     <h1>Survey responses</h1>
-    <p class="fineprint" style="text-align:left;margin:0 0 20px">Local server saves to <code>data/responses.json</code>. GitHub Pages saves in this browser.</p>
+    <p class="fineprint" style="text-align:left;margin:0 0 16px">Saved as JSON in this browser. You can download the file.</p>
+    <p><button class="submit" id="download-json" type="button" style="width:auto;min-height:44px;padding:10px 16px">Download responses.json</button></p>
     <table>
       <thead>
         <tr>
@@ -30,6 +30,7 @@
       </tbody>
     </table>
   </main>
+  <script src="store.js"></script>
   <script>
     function join(list, extra) {
       const items = [...(list || [])];
@@ -37,12 +38,11 @@
       return items.join(", ") || "—";
     }
 
-    function renderRows(rows) {
-      const body = document.getElementById("rows");
-      if (!rows.length) {
-        body.innerHTML = "<tr><td colspan='6'>No responses yet.</td></tr>";
-        return;
-      }
+    const rows = loadResponses();
+    const body = document.getElementById("rows");
+    if (!rows.length) {
+      body.innerHTML = "<tr><td colspan='6'>No responses yet.</td></tr>";
+    } else {
       body.innerHTML = rows.slice().reverse().map((row) => `
         <tr>
           <td>${new Date(row.createdAt).toLocaleString()}</td>
@@ -55,17 +55,7 @@
       `).join("");
     }
 
-    if (location.hostname.endsWith("github.io")) {
-      renderRows(JSON.parse(localStorage.getItem("society-essentials-responses") || "[]"));
-    } else {
-      const api = location.port === "3000" ? "/api/feedback" : "http://localhost:3000/api/feedback";
-      fetch(api)
-        .then((res) => res.json())
-        .then((data) => renderRows(data.responses || []))
-        .catch(() => {
-          document.getElementById("rows").innerHTML = "<tr><td colspan='6'>Could not load responses. Start the server first.</td></tr>";
-        });
-    }
+    document.getElementById("download-json").addEventListener("click", downloadResponses);
   </script>
 </body>
 </html>
