@@ -13,7 +13,7 @@
   <div class="progress" aria-hidden="true"></div>
   <main class="wrap admin">
     <h1>Survey responses</h1>
-    <p class="fineprint" style="text-align:left;margin:0 0 20px">Saved in <code>data/responses.json</code></p>
+    <p class="fineprint" style="text-align:left;margin:0 0 20px">Local server saves to <code>data/responses.json</code>. GitHub Pages saves in this browser.</p>
     <table>
       <thead>
         <tr>
@@ -37,30 +37,35 @@
       return items.join(", ") || "—";
     }
 
-    const api = location.port === "3000" ? "/api/feedback" : "http://localhost:3000/api/feedback";
-    fetch(api)
-      .then((res) => res.json())
-      .then((data) => {
-        const rows = data.responses || [];
-        const body = document.getElementById("rows");
-        if (!rows.length) {
-          body.innerHTML = "<tr><td colspan='6'>No responses yet.</td></tr>";
-          return;
-        }
-        body.innerHTML = rows.reverse().map((row) => `
-          <tr>
-            <td>${new Date(row.createdAt).toLocaleString()}</td>
-            <td>${join(row.preferredDays)}</td>
-            <td>${join(row.fruits, row.fruitsOther)}</td>
-            <td>${join(row.dryFruits, row.dryFruitsOther)}</td>
-            <td>${row.diwaliHamper || "—"}</td>
-            <td>${join(row.chooseMoreOften, row.chooseMoreOftenOther)}</td>
-          </tr>
-        `).join("");
-      })
-      .catch(() => {
-        document.getElementById("rows").innerHTML = "<tr><td colspan='6'>Could not load responses. Start the server first.</td></tr>";
-      });
+    function renderRows(rows) {
+      const body = document.getElementById("rows");
+      if (!rows.length) {
+        body.innerHTML = "<tr><td colspan='6'>No responses yet.</td></tr>";
+        return;
+      }
+      body.innerHTML = rows.slice().reverse().map((row) => `
+        <tr>
+          <td>${new Date(row.createdAt).toLocaleString()}</td>
+          <td>${join(row.preferredDays)}</td>
+          <td>${join(row.fruits, row.fruitsOther)}</td>
+          <td>${join(row.dryFruits, row.dryFruitsOther)}</td>
+          <td>${row.diwaliHamper || "—"}</td>
+          <td>${join(row.chooseMoreOften, row.chooseMoreOftenOther)}</td>
+        </tr>
+      `).join("");
+    }
+
+    if (location.hostname.endsWith("github.io")) {
+      renderRows(JSON.parse(localStorage.getItem("society-essentials-responses") || "[]"));
+    } else {
+      const api = location.port === "3000" ? "/api/feedback" : "http://localhost:3000/api/feedback";
+      fetch(api)
+        .then((res) => res.json())
+        .then((data) => renderRows(data.responses || []))
+        .catch(() => {
+          document.getElementById("rows").innerHTML = "<tr><td colspan='6'>Could not load responses. Start the server first.</td></tr>";
+        });
+    }
   </script>
 </body>
 </html>

@@ -49,9 +49,23 @@ bindOther("fruits", "fruits-other");
 bindOther("dryFruits", "dry-fruits-other");
 bindOther("chooseMoreOften", "reason-other");
 
+function onGitHubPages() {
+  return location.hostname.endsWith("github.io");
+}
+
 function apiUrl(path) {
-  const onSurveyServer = location.protocol === "http:" && location.port === "3000";
-  return onSurveyServer ? path : "http://localhost:3000" + path;
+  if (location.port === "3000") return path;
+  return "http://localhost:3000" + path;
+}
+
+function saveLocal(payload) {
+  const rows = JSON.parse(localStorage.getItem("society-essentials-responses") || "[]");
+  rows.push({
+    id: Date.now().toString(36),
+    createdAt: new Date().toISOString(),
+    ...payload,
+  });
+  localStorage.setItem("society-essentials-responses", JSON.stringify(rows));
 }
 
 async function readJson(res) {
@@ -84,13 +98,17 @@ form.addEventListener("submit", async (event) => {
 
   submitBtn.disabled = true;
   try {
-    const res = await fetch(apiUrl("/api/feedback"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await readJson(res);
-    if (!res.ok) throw new Error(data.error || "Could not save your feedback.");
+    if (onGitHubPages()) {
+      saveLocal(payload);
+    } else {
+      const res = await fetch(apiUrl("/api/feedback"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await readJson(res);
+      if (!res.ok) throw new Error(data.error || "Could not save your feedback.");
+    }
     form.hidden = true;
     thanksEl.classList.add("is-on");
   } catch (err) {
