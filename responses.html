@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survey responses</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,650&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="progress" aria-hidden="true"></div>
+  <main class="wrap admin">
+    <h1>Survey responses</h1>
+    <p class="fineprint" style="text-align:left;margin:0 0 20px">Saved in <code>data/responses.json</code></p>
+    <table>
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Days</th>
+          <th>Fruits</th>
+          <th>Dry fruits</th>
+          <th>Diwali hamper</th>
+          <th>Choose more often</th>
+        </tr>
+      </thead>
+      <tbody id="rows">
+        <tr><td colspan="6">Loading…</td></tr>
+      </tbody>
+    </table>
+  </main>
+  <script>
+    function join(list, extra) {
+      const items = [...(list || [])];
+      if (extra) items.push(extra);
+      return items.join(", ") || "—";
+    }
+
+    const api = location.port === "3000" ? "/api/feedback" : "http://localhost:3000/api/feedback";
+    fetch(api)
+      .then((res) => res.json())
+      .then((data) => {
+        const rows = data.responses || [];
+        const body = document.getElementById("rows");
+        if (!rows.length) {
+          body.innerHTML = "<tr><td colspan='6'>No responses yet.</td></tr>";
+          return;
+        }
+        body.innerHTML = rows.reverse().map((row) => `
+          <tr>
+            <td>${new Date(row.createdAt).toLocaleString()}</td>
+            <td>${join(row.preferredDays)}</td>
+            <td>${join(row.fruits, row.fruitsOther)}</td>
+            <td>${join(row.dryFruits, row.dryFruitsOther)}</td>
+            <td>${row.diwaliHamper || "—"}</td>
+            <td>${join(row.chooseMoreOften, row.chooseMoreOftenOther)}</td>
+          </tr>
+        `).join("");
+      })
+      .catch(() => {
+        document.getElementById("rows").innerHTML = "<tr><td colspan='6'>Could not load responses. Start the server first.</td></tr>";
+      });
+  </script>
+</body>
+</html>
